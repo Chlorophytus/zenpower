@@ -1,7 +1,7 @@
 /*
  * Zenpower - Driver for reading temperature, voltage, current and power for AMD 17h CPUs
  *
- * Copyright (c) 2018-2020 Ondrej Čerman
+ * Copyright (c) 2018-2020 Ondrej Čerman, Roland Metivier
  *
  * This driver is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License; either
@@ -38,8 +38,10 @@
 MODULE_DESCRIPTION("AMD ZEN family CPU Sensors Driver");
 MODULE_AUTHOR("Ondrej Čerman");
 MODULE_LICENSE("GPL");
-MODULE_VERSION("0.1.10");
+MODULE_VERSION("0.1.11");
 
+
+bool shift_quirk = 0;
 
 #ifndef PCI_DEVICE_ID_AMD_17H_DF_F3
 #define PCI_DEVICE_ID_AMD_17H_DF_F3         0x1463
@@ -167,6 +169,9 @@ static u32 get_core_current(u32 plane, bool zen2)
 	// I = 1039.211 * iddcor
 	// I =  658.823 * iddcor
 	fc = zen2 ? 658823 : 1039211;
+
+	// NOTE: Added this kparam in, hopefully we get correct readouts on TRX40 now.
+	if(shift_quirk) { fc <<= 1; }
 
 	return  (fc * idd_cor) / 1000;
 }
@@ -654,4 +659,6 @@ static struct pci_driver zenpower_driver = {
 	.probe = zenpower_probe,
 };
 
+module_param(shift_quirk, bool, 0);
+MODULE_PARM_DESC(shift_quirk, "Enable logical left shift of power readout by 1");
 module_pci_driver(zenpower_driver);
